@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 from data import get_stock_data
 from indicators import add_indicators
 from strategy import generate_signal
+from predict import predict_stock
 
 st.set_page_config(page_title="TradeSense AI", layout="wide")
 
@@ -21,21 +22,38 @@ if st.button("Analyze Stock"):
         df = get_stock_data(symbol)
         df = add_indicators(df)
 
+        prediction, ml_confidence = predict_stock(df)
+
+        if prediction == 1:
+         ml_signal = "BUY"
+        else:
+         ml_signal = "SELL"
+
         recommendation, confidence, reasons = generate_signal(df)
 
         latest = df.iloc[-1]
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
 
         col1.metric("Current Price", f"₹{latest['Close']:.2f}")
         col2.metric("RSI", f"{latest['RSI']:.2f}")
-        col3.metric("Signal", recommendation)
+        col3.metric("Rule Signal", recommendation)
+        col4.metric("AI Signal", ml_signal)
 
         st.success(f"Confidence: {confidence}%")
+        st.info(f"AI Confidence: {ml_confidence:.1f}%")
 
         st.subheader("Why?")
         for reason in reasons:
             st.write("•", reason)
+
+        st.subheader("AI Market Prediction")
+
+        st.metric(
+            "Next-Day Prediction",
+            ml_signal,
+            f"{ml_confidence:.1f}% confidence"
+        )
 
         fig = go.Figure()
 
